@@ -125,7 +125,6 @@
 import { computed } from 'vue';
 
 const route = useRoute();
-const config = useRuntimeConfig();
 
 // Predefined sample models fallback registry
 const sampleModelsMap = {
@@ -145,7 +144,7 @@ const sampleModelsMap = {
   }
 };
 
-const { data: apiModel, pending } = await useFetch(`${config.public.apiBase}/api/models/${route.params.id}`, {
+const { data: apiModel, pending } = await useFetch(`/api/models/${route.params.id}`, {
   key: `model-${route.params.id}`,
   lazy: true
 });
@@ -173,6 +172,6 @@ const formattedDate = computed(() => {
 const fullModelUrl = computed(() => {
   if (!activeModel.value || !activeModel.value.fileUrl) return '';
   if (activeModel.value.fileUrl.startsWith('http') || activeModel.value.fileUrl.startsWith('data:')) return activeModel.value.fileUrl;
-  return `${config.public.apiBase}${activeModel.value.fileUrl}`;
+  return activeModel.value.fileUrl;
 });
 </script>

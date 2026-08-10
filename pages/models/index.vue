@@ -48,9 +48,6 @@
       <p class="text-zinc-400 text-xs mb-6">
         Hozircha hech qanday model mavjud emas yoki qidiruv natijasi bo'sh.
       </p>
-      <a href="http://localhost:3001" target="_blank" class="px-4 py-2 bg-zinc-100 text-zinc-950 font-semibold text-xs rounded-lg hover:bg-zinc-200 transition">
-        Admin Console orqali yuklash
-      </a>
     </div>
 
     <!-- Models Grid Cards -->
@@ -104,15 +101,14 @@
 <script setup>
 import { ref, computed } from 'vue';
 
-const config = useRuntimeConfig();
 const searchQuery = ref('');
 
-const { data: models, pending } = await useFetch(`${config.public.apiBase}/api/models`, {
+const { data: models, pending } = await useFetch('/api/models', {
   default: () => [
     {
       id: 'sample-1',
       name: 'Sample Cyberpunk Helmet',
-      description: 'A futuristic 3D helmet model with metallic reflections and glowing visor.',
+      description: 'Futuristik 3D kaskad va metalli renderlangan vizor bilan jihozlangan model.',
       fileUrl: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
       fileSize: 3715124
     }
