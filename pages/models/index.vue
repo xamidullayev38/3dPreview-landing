@@ -113,8 +113,8 @@ const { data: models, pending } = await useFetch(`${config.public.apiBase}/api/m
       id: 'sample-1',
       name: 'Sample Cyberpunk Helmet',
       description: 'A futuristic 3D helmet model with metallic reflections and glowing visor.',
-      fileUrl: '/uploads/sample_helmet.glb',
-      fileSize: 2048000
+      fileUrl: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
+      fileSize: 3715124
     }
   ]
 });

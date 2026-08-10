@@ -129,14 +129,14 @@ const { data: model, pending, error } = await useFetch(`${config.public.apiBase}
     id: route.params.id,
     name: 'Sample Cyberpunk Helmet',
     description: 'A futuristic 3D helmet model with metallic reflections and glowing visor.',
-    fileUrl: '/uploads/sample_helmet.glb',
-    fileSize: 2048000
+    fileUrl: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
+    fileSize: 3715124
   })
 });
 
 const fullModelUrl = computed(() => {
   if (!model.value || !model.value.fileUrl) return '';
-  if (model.value.fileUrl.startsWith('http')) return model.value.fileUrl;
+  if (model.value.fileUrl.startsWith('http') || model.value.fileUrl.startsWith('data:')) return model.value.fileUrl;
   return `${config.public.apiBase}${model.value.fileUrl}`;
 });
 </script>
