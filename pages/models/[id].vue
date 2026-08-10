@@ -26,6 +26,12 @@
         <div class="h-[520px] w-full rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 relative shadow-2xl">
           <ClientOnly>
             <ThreeViewer :model-url="fullModelUrl" />
+            <template #fallback>
+              <div class="w-full h-full flex flex-col items-center justify-center bg-zinc-950">
+                <div class="w-8 h-8 border-2 border-zinc-800 border-t-cyan-400 rounded-full animate-spin mb-2"></div>
+                <p class="text-zinc-500 text-xs font-mono">3D Viewport Tayyorlanmoqda...</p>
+              </div>
+            </template>
           </ClientOnly>
         </div>
 
@@ -53,9 +59,14 @@
             <span class="px-2.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-cyan-400 text-[10px] font-mono font-semibold uppercase">
               3D GLB Model
             </span>
-            <span class="text-zinc-500 text-xs font-mono">
-              {{ activeModel.createdAt ? new Date(activeModel.createdAt).toLocaleDateString() : 'Real-Time' }}
-            </span>
+            <ClientOnly>
+              <span class="text-zinc-500 text-xs font-mono">
+                {{ formattedDate }}
+              </span>
+              <template #fallback>
+                <span class="text-zinc-500 text-xs font-mono">Real-Time</span>
+              </template>
+            </ClientOnly>
           </div>
           <h1 class="text-2xl font-bold text-white tracking-tight">
             {{ activeModel.name }}
@@ -148,6 +159,15 @@ const activeModel = computed(() => {
     fileUrl: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
     fileSize: 3715124
   };
+});
+
+const formattedDate = computed(() => {
+  if (!activeModel.value || !activeModel.value.createdAt) return 'Real-Time';
+  try {
+    return new Date(activeModel.value.createdAt).toLocaleDateString('uz-UZ');
+  } catch {
+    return 'Real-Time';
+  }
 });
 
 const fullModelUrl = computed(() => {
