@@ -6,7 +6,7 @@
     <!-- Loading Spinner Overlay -->
     <div v-if="isLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 backdrop-blur-sm z-20 transition-opacity duration-300">
       <div class="w-8 h-8 border-2 border-zinc-700 border-t-cyan-400 rounded-full animate-spin mb-3"></div>
-      <p class="text-zinc-400 font-medium text-xs font-mono">Loading 3D Asset... {{ loadProgress }}%</p>
+      <p class="text-zinc-400 font-medium text-xs font-mono">Rendering 3D Asset... {{ loadProgress }}%</p>
     </div>
 
     <!-- Minimalist Toolbar -->
@@ -126,10 +126,10 @@ const initThree = () => {
   fillLight.position.set(-5, 2, -5);
   scene.add(fillLight);
 
-  // Create Standalone High-Tech Procedural Mesh Model as Default / Fallback
+  // Create Standalone High-Tech Procedural Mesh Model as Default
   createProceduralModel();
 
-  // Load GLB Model if URL is valid
+  // Load GLB Model if URL is provided and valid
   if (props.modelUrl) {
     loadGLBModel(props.modelUrl);
   } else {
@@ -149,6 +149,10 @@ const initThree = () => {
 
 // Create a High-Tech 3D Cyberpunk Visor & Core model as instant fallback
 const createProceduralModel = () => {
+  if (proceduralGroup && scene) {
+    scene.remove(proceduralGroup);
+  }
+
   proceduralGroup = new THREE.Group();
 
   const chromeMat = new THREE.MeshPhysicalMaterial({
@@ -190,7 +194,10 @@ const createProceduralModel = () => {
 };
 
 const loadGLBModel = (url) => {
-  if (!url) {
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    if (proceduralGroup && scene && !scene.children.includes(proceduralGroup)) {
+      scene.add(proceduralGroup);
+    }
     isLoading.value = false;
     return;
   }
@@ -238,7 +245,11 @@ const loadGLBModel = (url) => {
       }
     },
     (error) => {
-      console.warn('GLB load error, using procedural 3D model fallback:', error);
+      console.warn('GLB load error (returned HTML/404), using 3D procedural fallback:', error);
+      if (loadedModel) scene.remove(loadedModel);
+      if (proceduralGroup && scene && !scene.children.includes(proceduralGroup)) {
+        scene.add(proceduralGroup);
+      }
       isLoading.value = false;
     }
   );
