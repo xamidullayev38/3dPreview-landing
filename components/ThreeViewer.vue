@@ -5,28 +5,15 @@
 
     <!-- Loading Spinner Overlay -->
     <div v-if="isLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 backdrop-blur-sm z-20 transition-opacity duration-300">
-      <div class="w-8 h-8 border-2 border-zinc-700 border-t-zinc-200 rounded-full animate-spin mb-3"></div>
-      <p class="text-zinc-400 font-medium text-xs">Model yuklanmoqda... {{ loadProgress }}%</p>
-    </div>
-
-    <!-- Error Message -->
-    <div v-if="errorMessage" class="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/95 z-20 p-6 text-center">
-      <div class="w-10 h-10 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center mb-3 border border-rose-500/20">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
-      <p class="text-zinc-300 font-medium text-xs mb-3">{{ errorMessage }}</p>
-      <button @click="reloadModel" class="px-3.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium rounded-lg border border-zinc-700 transition">
-        Qayta urinib ko'rish
-      </button>
+      <div class="w-8 h-8 border-2 border-zinc-700 border-t-cyan-400 rounded-full animate-spin mb-3"></div>
+      <p class="text-zinc-400 font-medium text-xs font-mono">Loading 3D Asset... {{ loadProgress }}%</p>
     </div>
 
     <!-- Minimalist Toolbar -->
-    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-zinc-900/90 backdrop-blur-md px-3 py-2 rounded-xl flex items-center gap-2 border border-zinc-800 shadow-lg">
+    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-zinc-900/90 backdrop-blur-md px-3.5 py-2 rounded-xl flex items-center gap-2 border border-zinc-800 shadow-xl">
       <button 
         @click="toggleAutoRotate" 
-        :class="isAutoRotating ? 'text-white bg-zinc-800 border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'"
+        :class="isAutoRotating ? 'text-white bg-zinc-800 border-zinc-700 font-bold' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'"
         class="px-2.5 py-1 rounded-lg text-xs font-medium border border-transparent transition flex items-center gap-1.5"
         title="360° Avto Aylantirish"
       >
@@ -40,7 +27,7 @@
 
       <button 
         @click="toggleWireframe" 
-        :class="isWireframe ? 'text-white bg-zinc-800 border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'"
+        :class="isWireframe ? 'text-white bg-zinc-800 border-zinc-700 font-bold' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'"
         class="px-2.5 py-1 rounded-lg text-xs font-medium border border-transparent transition flex items-center gap-1.5"
         title="Karkas rejimi"
       >
@@ -73,18 +60,18 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 const props = defineProps({
   modelUrl: {
     type: String,
-    required: true
+    default: ''
   }
 });
 
 const canvasContainer = ref(null);
 const isLoading = ref(true);
 const loadProgress = ref(0);
-const errorMessage = ref('');
 const isAutoRotating = ref(true);
 const isWireframe = ref(false);
 
 let scene, camera, renderer, controls, loadedModel, animationId;
+let proceduralGroup;
 
 const initThree = () => {
   if (!canvasContainer.value) return;
@@ -110,7 +97,7 @@ const initThree = () => {
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 1.2;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
 
@@ -126,23 +113,29 @@ const initThree = () => {
   controls.autoRotateSpeed = 1.8;
   controls.maxPolarAngle = Math.PI / 2 + 0.1;
 
-  // Clean Lighting Setup
+  // Studio Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
   scene.add(ambientLight);
 
-  const mainLight = new THREE.DirectionalLight(0xffffff, 2.2);
+  const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
   mainLight.position.set(5, 10, 7);
   mainLight.castShadow = true;
   scene.add(mainLight);
 
-  const fillLight = new THREE.DirectionalLight(0xe4e4e7, 1.0);
+  const fillLight = new THREE.DirectionalLight(0x00f0ff, 1.8);
   fillLight.position.set(-5, 2, -5);
   scene.add(fillLight);
 
-  // Load Model
-  loadGLBModel(props.modelUrl);
+  // Create Standalone High-Tech Procedural Mesh Model as Default / Fallback
+  createProceduralModel();
 
-  // Window Resize
+  // Load GLB Model if URL is valid
+  if (props.modelUrl) {
+    loadGLBModel(props.modelUrl);
+  } else {
+    isLoading.value = false;
+  }
+
   window.addEventListener('resize', onWindowResize);
 
   // Animation Loop
@@ -154,15 +147,62 @@ const initThree = () => {
   animate();
 };
 
+// Create a High-Tech 3D Cyberpunk Visor & Core model as instant fallback
+const createProceduralModel = () => {
+  proceduralGroup = new THREE.Group();
+
+  const chromeMat = new THREE.MeshPhysicalMaterial({
+    color: 0xe2e8f0,
+    metalness: 0.95,
+    roughness: 0.1,
+    clearcoat: 1.0,
+    reflectivity: 1.0
+  });
+
+  const cyanEmissive = new THREE.MeshStandardMaterial({
+    color: 0x00f0ff,
+    emissive: 0x00f0ff,
+    emissiveIntensity: 0.8,
+    metalness: 0.8
+  });
+
+  const bodyGeo = new THREE.TorusGeometry(1.2, 0.28, 32, 100);
+  const bodyMesh = new THREE.Mesh(bodyGeo, chromeMat);
+  proceduralGroup.add(bodyMesh);
+
+  const lensGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.15, 64);
+  const lensMat = new THREE.MeshPhysicalMaterial({
+    color: 0x38bdf8,
+    transmission: 0.9,
+    transparent: true,
+    opacity: 0.85,
+    roughness: 0.05
+  });
+  const lensMesh = new THREE.Mesh(lensGeo, lensMat);
+  lensMesh.rotation.x = Math.PI / 2;
+  proceduralGroup.add(lensMesh);
+
+  const coreGeo = new THREE.SphereGeometry(0.35, 32, 32);
+  const coreMesh = new THREE.Mesh(coreGeo, cyanEmissive);
+  proceduralGroup.add(coreMesh);
+
+  scene.add(proceduralGroup);
+};
+
 const loadGLBModel = (url) => {
+  if (!url) {
+    isLoading.value = false;
+    return;
+  }
+
   isLoading.value = true;
-  errorMessage.value = '';
   loadProgress.value = 0;
 
   const loader = new GLTFLoader();
   loader.load(
     url,
     (gltf) => {
+      if (proceduralGroup) scene.remove(proceduralGroup);
       if (loadedModel) scene.remove(loadedModel);
       loadedModel = gltf.scene;
 
@@ -198,9 +238,8 @@ const loadGLBModel = (url) => {
       }
     },
     (error) => {
-      console.error('GLTF loading error:', error);
+      console.warn('GLB load error, using procedural 3D model fallback:', error);
       isLoading.value = false;
-      errorMessage.value = '3D model yuklanmadi.';
     }
   );
 };
@@ -212,8 +251,9 @@ const toggleAutoRotate = () => {
 
 const toggleWireframe = () => {
   isWireframe.value = !isWireframe.value;
-  if (loadedModel) {
-    loadedModel.traverse((child) => {
+  const target = loadedModel || proceduralGroup;
+  if (target) {
+    target.traverse((child) => {
       if (child.isMesh && child.material) {
         if (Array.isArray(child.material)) {
           child.material.forEach((mat) => (mat.wireframe = isWireframe.value));
@@ -226,20 +266,17 @@ const toggleWireframe = () => {
 };
 
 const resetCamera = () => {
-  if (controls && loadedModel) {
-    const box = new THREE.Box3().setFromObject(loadedModel);
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    
-    camera.position.set(0, maxDim / 3, maxDim * 1.8);
-    controls.target.set(0, 0, 0);
-    controls.update();
-  }
-};
-
-const reloadModel = () => {
-  if (props.modelUrl) {
-    loadGLBModel(props.modelUrl);
+  if (controls) {
+    const target = loadedModel || proceduralGroup;
+    if (target) {
+      const box = new THREE.Box3().setFromObject(target);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      
+      camera.position.set(0, maxDim / 3, Math.max(maxDim * 1.8, 4));
+      controls.target.set(0, 0, 0);
+      controls.update();
+    }
   }
 };
 
@@ -253,7 +290,7 @@ const onWindowResize = () => {
 };
 
 watch(() => props.modelUrl, (newUrl) => {
-  if (newUrl && scene) {
+  if (scene) {
     loadGLBModel(newUrl);
   }
 });

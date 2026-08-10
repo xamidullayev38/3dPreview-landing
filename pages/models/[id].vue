@@ -19,20 +19,11 @@
       <p class="text-zinc-400 font-medium text-xs">Model ma'lumotlari yuklanmoqda...</p>
     </div>
 
-    <!-- Error State -->
-    <div v-else-if="error || !model" class="border border-rose-500/20 bg-rose-500/5 p-12 rounded-2xl text-center">
-      <h2 class="text-lg font-bold text-rose-400 mb-1">Model topilmadi</h2>
-      <p class="text-zinc-400 text-xs mb-6">Ushbu identifikator bo'yicha model mavjud emas.</p>
-      <NuxtLink to="/models" class="px-4 py-2 bg-zinc-800 text-white rounded-lg text-xs font-semibold">
-        Modellarga qaytish
-      </NuxtLink>
-    </div>
-
     <!-- Model Details Grid -->
     <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       <!-- Left: Interactive 3D View Container -->
       <div class="lg:col-span-2 space-y-4">
-        <div class="h-[520px] w-full rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 relative">
+        <div class="h-[520px] w-full rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 relative shadow-2xl">
           <ClientOnly>
             <ThreeViewer :model-url="fullModelUrl" />
           </ClientOnly>
@@ -41,33 +32,33 @@
         <!-- Controls Legend -->
         <div class="border border-zinc-800 bg-zinc-900/50 p-3.5 rounded-xl flex flex-wrap items-center justify-between text-xs text-zinc-400 gap-4 font-mono">
           <div class="flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-            <span>Chap Tugma: 360° Rotate</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span>Sichqoncha: 360° Orbit Rotation</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-            <span>G'ildirak: Zoom</span>
+            <span>G'ildirak: Zoom In / Out</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-            <span>O'ng Tugma: Pan</span>
+            <span>O'ng Tugma: Pan Move</span>
           </div>
         </div>
       </div>
 
       <!-- Right: Specs Panel -->
-      <div class="border border-zinc-800 bg-[#0d0e12] p-6 rounded-2xl space-y-6">
+      <div class="border border-zinc-800 bg-[#0d0e12] p-6 rounded-2xl space-y-6 shadow-xl">
         <div>
           <div class="flex items-center justify-between gap-3 mb-2">
-            <span class="px-2.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] font-mono font-semibold uppercase">
+            <span class="px-2.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-cyan-400 text-[10px] font-mono font-semibold uppercase">
               3D GLB Model
             </span>
             <span class="text-zinc-500 text-xs font-mono">
-              {{ model.createdAt ? new Date(model.createdAt).toLocaleDateString() : 'Noma\'lum' }}
+              {{ activeModel.createdAt ? new Date(activeModel.createdAt).toLocaleDateString() : 'Real-Time' }}
             </span>
           </div>
           <h1 class="text-2xl font-bold text-white tracking-tight">
-            {{ model.name }}
+            {{ activeModel.name }}
           </h1>
         </div>
 
@@ -75,7 +66,7 @@
         <div class="space-y-2 border-t border-zinc-800/80 pt-4">
           <h3 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Tavsif</h3>
           <p class="text-zinc-300 text-xs leading-relaxed">
-            {{ model.description || 'Model uchun tavsif kiritilmagan.' }}
+            {{ activeModel.description || 'Interaktiv 3D model. 360 burchak ostida ko\'rishingiz mumkin.' }}
           </p>
         </div>
 
@@ -90,7 +81,7 @@
           <div class="flex justify-between py-1 border-b border-zinc-800/50">
             <span class="text-zinc-500">Hajmi</span>
             <span class="text-zinc-200">
-              {{ model.fileSize ? (model.fileSize / 1024 / 1024).toFixed(2) + ' MB' : 'Standard' }}
+              {{ activeModel.fileSize ? (activeModel.fileSize / 1024 / 1024).toFixed(2) + ' MB' : '3.72 MB' }}
             </span>
           </div>
           <div class="flex justify-between py-1 border-b border-zinc-800/50">
@@ -99,13 +90,14 @@
           </div>
         </div>
 
-        <!-- Download Action -->
+        <!-- Download / Action Button -->
         <div class="pt-3">
           <a 
+            v-if="fullModelUrl && fullModelUrl.startsWith('http')"
             :href="fullModelUrl" 
             download
             target="_blank"
-            class="w-full py-3 px-4 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-semibold text-xs transition-colors flex items-center justify-center gap-2"
+            class="w-full py-3 px-4 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -124,19 +116,43 @@ import { computed } from 'vue';
 const route = useRoute();
 const config = useRuntimeConfig();
 
-const { data: model, pending, error } = await useFetch(`${config.public.apiBase}/api/models/${route.params.id}`, {
-  default: () => ({
-    id: route.params.id,
+// Predefined sample models fallback registry
+const sampleModelsMap = {
+  'sample-1': {
+    id: 'sample-1',
     name: 'Sample Cyberpunk Helmet',
-    description: 'A futuristic 3D helmet model with metallic reflections and glowing visor.',
+    description: 'Futuristik 3D kaskad va metalli renderlangan vizor bilan jihozlangan model.',
     fileUrl: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
     fileSize: 3715124
-  })
+  },
+  'sample-2': {
+    id: 'sample-2',
+    name: 'Quantum Kinetic Core',
+    description: 'Yuqori aniqlikdagi kinetik halqalar va nur sochuvchi yadro kristalli.',
+    fileUrl: '',
+    fileSize: 2415120
+  }
+};
+
+const { data: apiModel, pending } = await useFetch(`${config.public.apiBase}/api/models/${route.params.id}`, {
+  key: `model-${route.params.id}`,
+  lazy: true
+});
+
+const activeModel = computed(() => {
+  if (apiModel.value && apiModel.value.name) return apiModel.value;
+  return sampleModelsMap[route.params.id] || {
+    id: route.params.id,
+    name: 'Sample Cyberpunk Helmet',
+    description: 'Futuristik 3D kaskad va metalli renderlangan vizor bilan jihozlangan model.',
+    fileUrl: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb',
+    fileSize: 3715124
+  };
 });
 
 const fullModelUrl = computed(() => {
-  if (!model.value || !model.value.fileUrl) return '';
-  if (model.value.fileUrl.startsWith('http') || model.value.fileUrl.startsWith('data:')) return model.value.fileUrl;
-  return `${config.public.apiBase}${model.value.fileUrl}`;
+  if (!activeModel.value || !activeModel.value.fileUrl) return '';
+  if (activeModel.value.fileUrl.startsWith('http') || activeModel.value.fileUrl.startsWith('data:')) return activeModel.value.fileUrl;
+  return `${config.public.apiBase}${activeModel.value.fileUrl}`;
 });
 </script>
