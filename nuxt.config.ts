@@ -1,3 +1,5 @@
+const adminUrl = process.env.NUXT_PUBLIC_API_BASE || 'https://3d-preview-admin.vercel.app';
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2026-08-08',
@@ -5,6 +7,12 @@ export default defineNuxtConfig({
   srcDir: '.',
   css: ['~/assets/css/main.css'],
   modules: ['@nuxtjs/tailwindcss'],
+  nitro: {
+    routeRules: {
+      '/api/**': { proxy: `${adminUrl}/api/**` },
+      '/uploads/**': { proxy: `${adminUrl}/uploads/**` }
+    }
+  },
   app: {
     head: {
       title: '3dPreview — Interactive 3D Parallax Experience',
@@ -20,7 +28,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:5000'
+      apiBase: ''
     }
   }
 })
